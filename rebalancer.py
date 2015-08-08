@@ -1,6 +1,7 @@
 
 import csv
 import argparse
+from prettytable import PrettyTable
 
 def show_positions(args):
     # Load symbols map
@@ -54,10 +55,24 @@ def show_positions(args):
 
     
     print "Total portfolio value: %0.2f" % total_portfolio
-    print "Asset\tTarget\tCurrent\tMarket value"
+
+    x = PrettyTable(["Asset","Target","Current", "Prop diff", "Market value", "Target value"])
+    x.align["Market value"] = "r"
+    x.align["Target value"] = "r"
     for asset_totals in allocation_totals:
-        print "%s\t%0.2f\t%0.3f\t%0.2f" % (asset_totals["type"], float(targets[asset_totals["type"]]['Target']),
-                asset_totals["totals"]['total'] / total_portfolio, asset_totals["totals"]['total'])
+
+        atarget = float(targets[asset_totals["type"]]['Target'])
+        aprop   = asset_totals["totals"]['total'] / total_portfolio
+        difference = aprop / atarget if atarget != 0 else 0
+
+        x.add_row([asset_totals["type"],
+                "%0.2f" % atarget,
+                "%0.3f" % aprop,
+                "%0.2f" % difference,
+                "%0.2f$" % asset_totals["totals"]['total'],
+                "%0.2f$" % (atarget * total_portfolio)])
+
+    print x
 
 if __name__ == "__main__":
 
@@ -74,5 +89,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    print args
     show_positions(args)
