@@ -65,7 +65,7 @@ def show_positions(args):
         aprop   = asset_totals["totals"]['total'] / total_portfolio
         difference = aprop / atarget if atarget != 0 else 0
 
-        x.add_row([asset_totals["type"],
+        x.add_row([targets[asset_totals["type"]]['Name'],
                 "%0.2f" % atarget,
                 "%0.3f" % aprop,
                 "%0.2f" % difference,
