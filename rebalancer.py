@@ -3,6 +3,25 @@ import csv
 import argparse
 from prettytable import PrettyTable
 
+# Manage key names that changed in December 2015
+def getPosKey(d, key):
+    # pre dec 2015
+    if "EquitySymbol" in d:
+        return d[key]
+
+    # post dec 2015
+    if key == "EquitySymbol":
+        return d["Equity Symbol"]
+    if key == "EquityDescription":
+        return d["Equity Description"]
+    if key == "CurrencyDisplay":
+        return d["Currency"]
+    if key == "MarketValue":
+        return d["Market Value"]
+
+    raise Error("Unknown key: " % key)
+
+
 def show_positions(args):
     # Load symbols map
     symbolsmap_rdr = csv.DictReader(open(args.symbolmap))
@@ -25,16 +44,16 @@ def show_positions(args):
     for pos_idx, pos in enumerate(positions_rdr):
         if len(pos) == 0: continue
         positions.append(pos)
-        position_type = symbol_map[pos['EquitySymbol']]
+        position_type = symbol_map[getPosKey(pos, 'EquitySymbol')]
         
         if position_type == '':
-            print "WARNING. Position type for %s (%s) is an empty string!" % (pos['EquitySymbol'], pos['EquityDescription'])
+            print "WARNING. Position type for %s (%s) is an empty string!" % (getPosKey(pos, 'EquitySymbol'), getPosKey(pos, 'EquityDescription'))
             position_type = "Other"
 
-        if not pos['EquitySymbol'] in allocations[position_type]:
-            allocations[position_type][pos['EquitySymbol']] = [pos]
+        if not getPosKey(pos, 'EquitySymbol') in allocations[position_type]:
+            allocations[position_type][getPosKey(pos, 'EquitySymbol')] = [pos]
         else:
-            allocations[position_type][pos['EquitySymbol']].append(pos)
+            allocations[position_type][getPosKey(pos, 'EquitySymbol')].append(pos)
     
 
     allocation_totals = []
@@ -43,7 +62,7 @@ def show_positions(args):
         asset_total = {'CAD':0, 'USD':0, 'total':0}
         for asset_symbol, asset_positions in assets.iteritems():
             for pos in asset_positions:
-                asset_total[pos['CurrencyDisplay']] += float(pos['MarketValue'])
+                asset_total[getPosKey(pos, 'CurrencyDisplay')] += float(getPosKey(pos, 'MarketValue'))
         
         asset_total['total'] = asset_total['CAD'] + asset_total['USD'] * args.xchrate
         total_portfolio += asset_total['total']
