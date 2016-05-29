@@ -75,21 +75,28 @@ def show_positions(args):
     
     print "Total portfolio value: %0.2f" % total_portfolio
 
-    x = PrettyTable(["Asset","Target","Current", "Prop diff", "Market value", "Target value"])
+    x = PrettyTable(["Asset","Target","Current", "Prop diff", "Market value", "Target value", "+/- value"])
     x.align["Market value"] = "r"
     x.align["Target value"] = "r"
+    x.align["+/- value"] = "r"
     for asset_totals in allocation_totals:
 
         atarget = float(targets[asset_totals["type"]]['Target'])
+
+        # skip if target is 0 allocation and we have none
+        if atarget==0 and asset_totals["totals"]['total']==0: continue
+
         aprop   = asset_totals["totals"]['total'] / total_portfolio
         difference = aprop / atarget if atarget != 0 else 0
+        targetVal = (atarget * total_portfolio)
 
         x.add_row([targets[asset_totals["type"]]['Name'],
                 "%0.2f" % atarget,
                 "%0.3f" % aprop,
                 "%0.2f" % difference,
                 "%0.2f$" % asset_totals["totals"]['total'],
-                "%0.2f$" % (atarget * total_portfolio)])
+                "%0.2f$" % targetVal,
+                "%0.2f$" % (asset_totals["totals"]['total']-targetVal)])
 
     print x
 
