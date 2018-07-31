@@ -45,7 +45,7 @@ def show_positions(args):
         if len(pos) == 0: continue
         positions.append(pos)
         position_type = symbol_map[getPosKey(pos, 'EquitySymbol')]
-        
+
         if position_type == '':
             print "WARNING. Position type for %s (%s) is an empty string!" % (getPosKey(pos, 'EquitySymbol'), getPosKey(pos, 'EquityDescription'))
             position_type = "Other"
@@ -54,7 +54,7 @@ def show_positions(args):
             allocations[position_type][getPosKey(pos, 'EquitySymbol')] = [pos]
         else:
             allocations[position_type][getPosKey(pos, 'EquitySymbol')].append(pos)
-    
+
 
     allocation_totals = []
     total_portfolio = 0
@@ -63,7 +63,7 @@ def show_positions(args):
         for asset_symbol, asset_positions in assets.iteritems():
             for pos in asset_positions:
                 asset_total[getPosKey(pos, 'CurrencyDisplay')] += float(getPosKey(pos, 'MarketValue'))
-        
+
         asset_total['total'] = asset_total['CAD'] + asset_total['USD'] * args.xchrate
         total_portfolio += asset_total['total']
 
@@ -72,7 +72,24 @@ def show_positions(args):
             'totals': asset_total
         })
 
-    
+    # load cash file
+    cash_total = {'CAD':0, 'USD':0, 'total':0}
+    cash_rdr = csv.DictReader(open(args.cash))
+    for line in cash_rdr:
+        if line['currency'] not in ['USD', 'CAD']:
+            raise Exception("wrong currency!!")
+        
+        cash_total[line['currency']] = float(line['total'])
+
+    cash_total['total'] = cash_total['CAD'] + cash_total['USD'] * args.xchrate
+    total_portfolio += asset_total['total']
+    allocation_totals.append({
+        'type': "Cash",
+        'totals': cash_total
+    })
+    targets['Cash'] = {'Symbol': 'Cash', 'Name': 'Cash', 'Target': '0'}
+
+
     print "Total portfolio value: %0.2f" % total_portfolio
 
     x = PrettyTable(["Asset","Target","Current", "Prop diff", "Market value", "Target value", "+/- value"])
@@ -103,13 +120,15 @@ def show_positions(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Show current portfolio balancing')
-    
+
     parser.add_argument('--targets', type=str, default="targets.csv",
                            help='targets csv file')
     parser.add_argument('--symbolmap', type=str, default="symbolmap.csv",
                            help='symbols map csv file')
     parser.add_argument('--positions', type=str,
                            help='positions csv file')
+    parser.add_argument('--cash', type=str,
+                           help='cash csv file')
     parser.add_argument('--xchrate', type=float,
                            help='exchange rate (US to CAD)')
 
