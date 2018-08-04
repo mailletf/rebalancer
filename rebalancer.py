@@ -78,7 +78,7 @@ def show_positions(args):
     for line in cash_rdr:
         if line['currency'] not in ['USD', 'CAD']:
             raise Exception("wrong currency!!")
-        
+
         cash_total[line['currency']] = float(line['total'])
 
     cash_total['total'] = cash_total['CAD'] + cash_total['USD'] * args.xchrate
