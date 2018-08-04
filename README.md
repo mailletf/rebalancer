@@ -70,3 +70,10 @@ Total portfolio value: 1000.00$
 |            Cash           |  0.00  |  0.100  |           |    100.00$   |              |    100.00$ |
 +---------------------------+--------+---------+-----------+--------------+--------------+------------+
 ```
+
+### Fetching the exchange rate from Fixer.io API
+
+To not have to specify the exchange rate manually, create a [Fixer.io](https://fixer.io) account with the Free tier and put your
+API key in a file named `fixerio_apikey.txt`. The script will infer the date from the positions file and fetch the correct
+exchange rate for the day of the positions export.
+

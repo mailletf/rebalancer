@@ -1,5 +1,8 @@
 
+import os
+import re
 import csv
+import requests
 import argparse
 from prettytable import PrettyTable
 
@@ -22,7 +25,41 @@ def getPosKey(d, key):
     raise Error("Unknown key: " % key)
 
 
+def get_exchange_rate(args):
+    # if we've passed the exchange rate on the cmd line, use it
+    if args.xchrate:
+        return args.xchrate
+
+    # else try to use fixer.io
+    fixerio_keyfile = "fixerio_apikey.txt"
+    if os.path.exists(fixerio_keyfile):
+        key = open(fixerio_keyfile).readlines()[0].strip()
+
+    # we're assuming that the positions file has the date naming convention
+    p = re.compile(".*([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])).*")
+    m = p.match(args.positions)
+    if not m:
+        raise Exception("Exchange rate not provided on command line and unable to fetch from Fixer API")
+
+    fixer_url = "http://data.fixer.io/api/%s?access_key=%s&symbols=USD,CAD&format=1" % (m.group(1), key)
+    print ">> Calling Fixer API with: " + fixer_url
+
+    response = requests.get(fixer_url)
+    if response.status_code != 200:
+        raise Exception("Status code %d on Fixer API call" % response.status_code)
+
+    data = response.json()
+
+    # free plan only gives us Euros to CAD/USD, so divide them together
+    rate = data['rates']['CAD'] / data['rates']['USD']
+    print "USD -> CAD exchange rate = %0.4f" % rate
+    return rate
+
 def show_positions(args):
+
+    # resolve xchange rate
+    xchrate = get_exchange_rate(args)
+
     # Load symbols map
     symbolsmap_rdr = csv.DictReader(open(args.symbolmap))
     symbol_map = {}
@@ -64,7 +101,7 @@ def show_positions(args):
             for pos in asset_positions:
                 asset_total[getPosKey(pos, 'CurrencyDisplay')] += float(getPosKey(pos, 'MarketValue'))
 
-        asset_total['total'] = asset_total['CAD'] + asset_total['USD'] * args.xchrate
+        asset_total['total'] = asset_total['CAD'] + asset_total['USD'] * xchrate
         total_portfolio += asset_total['total']
 
         allocation_totals.append({
@@ -73,21 +110,22 @@ def show_positions(args):
         })
 
     # load cash file
-    cash_total = {'CAD':0, 'USD':0, 'total':0}
-    cash_rdr = csv.DictReader(open(args.cash))
-    for line in cash_rdr:
-        if line['currency'] not in ['USD', 'CAD']:
-            raise Exception("wrong currency!!")
+    if args.cash:
+        cash_total = {'CAD':0, 'USD':0, 'total':0}
+        cash_rdr = csv.DictReader(open(args.cash))
+        for line in cash_rdr:
+            if line['currency'] not in ['USD', 'CAD']:
+                raise Exception("wrong currency!!")
 
-        cash_total[line['currency']] = float(line['total'])
+            cash_total[line['currency']] = float(line['total'])
 
-    cash_total['total'] = cash_total['CAD'] + cash_total['USD'] * args.xchrate
-    total_portfolio += asset_total['total']
-    allocation_totals.append({
-        'type': "Cash",
-        'totals': cash_total
-    })
-    targets['Cash'] = {'Symbol': 'Cash', 'Name': 'Cash', 'Target': '0'}
+        cash_total['total'] = cash_total['CAD'] + cash_total['USD'] * xchrate
+        total_portfolio += asset_total['total']
+        allocation_totals.append({
+            'type': "Cash",
+            'totals': cash_total
+        })
+        targets['Cash'] = {'Symbol': 'Cash', 'Name': 'Cash', 'Target': '0'}
 
 
     print "Total portfolio value: %0.2f" % total_portfolio
@@ -130,7 +168,7 @@ if __name__ == "__main__":
     parser.add_argument('--cash', type=str,
                            help='cash csv file')
     parser.add_argument('--xchrate', type=float,
-                           help='exchange rate (US to CAD)')
+                           help='exchange rate (US to CAD). If not specified, will attempt to fetch from Fixer API')
 
     args = parser.parse_args()
 
