@@ -120,7 +120,7 @@ def show_positions(args):
             cash_total[line['currency']] = float(line['total'])
 
         cash_total['total'] = cash_total['CAD'] + cash_total['USD'] * xchrate
-        total_portfolio += asset_total['total']
+        total_portfolio += cash_total['total']
         allocation_totals.append({
             'type': "Cash",
             'totals': cash_total
