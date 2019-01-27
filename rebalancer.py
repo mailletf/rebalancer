@@ -70,9 +70,14 @@ def show_positions(args):
     targets_rdr = csv.DictReader(open(args.targets))
     targets = {}
     targets["Other"] = {"Name":"Other","Symbol":"Other","Target":0}
+    _total_target = 0
     for target_idx, target in enumerate(targets_rdr):
         if len(target) == 0: continue
         targets[target['Symbol']] = target
+        _total_target += float(target["Target"])
+
+    if _total_target != 1:
+        raise Exception("Target allocation should sum to 1, not %0.2f" % _total_target)
 
     # Load positions and group them by asset type
     positions_rdr = csv.DictReader(open(args.positions))
