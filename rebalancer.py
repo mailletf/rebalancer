@@ -76,7 +76,7 @@ def show_positions(args):
         targets[target['Symbol']] = target
         _total_target += float(target["Target"])
 
-    if _total_target != 1:
+    if round(_total_target, 2) != 1:
         raise Exception("Target allocation should sum to 1, not %0.2f" % _total_target)
 
     # Load positions and group them by asset type
